@@ -1,0 +1,107 @@
+{
+  "realm": "prime",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "accessCodeLifespan": 1800,
+  "accessCodeLifespanLogin": 1800,
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Default application user"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "facecontrol",
+      "name": "FaceControl",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "http://127.0.0.1:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080"
+      ],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "primeapp",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "redirectUris": [
+        "http://app.localhost/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://app.localhost",
+        "http://localhost:3000"
+      ],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "User",
+      "email": "demo@facecontrol.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "tester",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Tester",
+      "lastName": "User",
+      "email": "tester@primeapp.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Tester@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    }
+  ]
+}

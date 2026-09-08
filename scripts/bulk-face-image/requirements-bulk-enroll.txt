@@ -1,0 +1,2 @@
+# Optional: bulk JPEG enrollment into deepface.face_enrollment
+psycopg[binary]>=3.1
