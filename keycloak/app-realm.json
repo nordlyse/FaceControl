@@ -1,5 +1,5 @@
 {
-  "realm": "prime",
+  "realm": "app",
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": false,
@@ -49,7 +49,7 @@
       }
     },
     {
-      "clientId": "primeapp",
+      "clientId": "app",
       "enabled": true,
       "publicClient": true,
       "protocol": "openid-connect",
@@ -77,7 +77,7 @@
       "emailVerified": true,
       "firstName": "Demo",
       "lastName": "User",
-      "email": "demo@facecontrol.local",
+      "email": "demo@app.local",
       "credentials": [
         {
           "type": "password",
@@ -93,7 +93,7 @@
       "emailVerified": true,
       "firstName": "Tester",
       "lastName": "User",
-      "email": "tester@primeapp.com",
+      "email": "tester@app.local",
       "credentials": [
         {
           "type": "password",

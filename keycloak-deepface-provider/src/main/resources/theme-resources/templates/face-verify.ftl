@@ -1,38 +1,38 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayMessage=true; section>
   <#if section = "header">
-  <#if prime_face_first_enroll?has_content && prime_face_first_enroll>
+  <#if face_first_enroll?has_content && face_first_enroll>
   Save your login photo (first time only)
   <#else>
   Face verification
   </#if>
   <#elseif section = "form">
-  <form id="kc-prime-face-form" action="${url.loginAction}" method="post" enctype="application/x-www-form-urlencoded">
-    <input type="hidden" name="prime_face_image" id="prime_face_image" value="" />
+  <form id="kc-face-form" action="${url.loginAction}" method="post" enctype="application/x-www-form-urlencoded">
+    <input type="hidden" name="face_image" id="face_image" value="" />
     <div class="${properties.kcFormGroupClass!}">
-      <p class="instruction"><#if prime_face_first_enroll?has_content && prime_face_first_enroll>This photo is stored securely and used on future sign-ins to compare with your camera. Use good lighting and a neutral expression.<#else>Use your camera: open preview, then tap Capture (image is resized in the browser).</#if></p>
-      <p id="prime_face_status" class="instruction" style="font-weight:600;min-height:1.5em;" aria-live="polite"></p>
-      <div id="prime_face_cam_wrap" style="display:none;margin-bottom:1rem;">
-        <video id="prime_face_video" playsinline muted style="max-width:100%;max-height:280px;border-radius:4px;background:#111;"></video>
+      <p class="instruction"><#if face_first_enroll?has_content && face_first_enroll>This photo is stored securely and used on future sign-ins to compare with your camera. Use good lighting and a neutral expression.<#else>Use your camera: open preview, then tap Capture (image is resized in the browser).</#if></p>
+      <p id="face_status" class="instruction" style="font-weight:600;min-height:1.5em;" aria-live="polite"></p>
+      <div id="face_cam_wrap" style="display:none;margin-bottom:1rem;">
+        <video id="face_video" playsinline muted style="max-width:100%;max-height:280px;border-radius:4px;background:#111;"></video>
         <div style="margin-top:0.5rem;">
-          <button type="button" class="${properties.kcButtonClass!}" id="prime_face_start_cam">Start camera</button>
-          <button type="button" class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!}" id="prime_face_snap">Capture photo</button>
+          <button type="button" class="${properties.kcButtonClass!}" id="face_start_cam">Start camera</button>
+          <button type="button" class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!}" id="face_snap">Capture photo</button>
         </div>
       </div>
     </div>
     <div class="${properties.kcFormGroupClass!}">
-      <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!}" type="submit" id="prime_face_submit" value="Continue" />
+      <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!}" type="submit" id="face_submit" value="Continue" />
     </div>
   </form>
   <script type="text/javascript">
   (function () {
-    var form = document.getElementById('kc-prime-face-form');
-    var hiddenImg = document.getElementById('prime_face_image');
-    var video = document.getElementById('prime_face_video');
-    var camWrap = document.getElementById('prime_face_cam_wrap');
-    var btnStart = document.getElementById('prime_face_start_cam');
-    var btnSnap = document.getElementById('prime_face_snap');
-    var statusEl = document.getElementById('prime_face_status');
+    var form = document.getElementById('kc-face-form');
+    var hiddenImg = document.getElementById('face_image');
+    var video = document.getElementById('face_video');
+    var camWrap = document.getElementById('face_cam_wrap');
+    var btnStart = document.getElementById('face_start_cam');
+    var btnSnap = document.getElementById('face_snap');
+    var statusEl = document.getElementById('face_status');
     var stream = null;
 
     function setStatus(msg) {

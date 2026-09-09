@@ -1,3 +1,3 @@
 email,image_path,keycloak_user_id
-demo@facecontrol.local,./photos/demo.jpg,
-tester@primeapp.com,./photos/tester.jpg,
+demo@app.local,./photos/demo.jpg,
+tester@app.local,./photos/tester.jpg,

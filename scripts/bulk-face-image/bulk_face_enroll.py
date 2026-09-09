@@ -8,14 +8,14 @@ The app does not store profile photos on user.users — you must supply image fi
 Usage:
   pip install -r scripts/bulk-face-image/requirements-bulk-enroll.txt
   python scripts/bulk-face-image/bulk_face_enroll.py \\
-    --dsn postgresql://postgres:PASSWORD@localhost:1001/primeapp \\
+    --dsn postgresql://postgres:PASSWORD@localhost:1001/app \\
     --manifest scripts/bulk-face-image/bulk-face-enroll-manifest.example.csv \\
     --dry-run
 
 Then run without --dry-run to commit.
 
 After images are loaded, optionally sync Keycloak UUIDs:
-  docker compose exec -T postgres psql -U postgres -d primeapp < scripts/bulk-face-image/sync-face-enrollment-keycloak-ids.sql
+  docker compose exec -T postgres psql -U postgres -d app < scripts/bulk-face-image/sync-face-enrollment-keycloak-ids.sql
 (Repo root; `-f` would look inside the container where this file is not mounted.)
 """
 
@@ -90,7 +90,7 @@ ON CONFLICT (user_id) DO UPDATE SET
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Bulk enroll JPEG faces into deepface.face_enrollment")
-    p.add_argument("--dsn", required=True, help="PostgreSQL DSN, e.g. postgresql://postgres:pw@127.0.0.1:1001/primeapp")
+    p.add_argument("--dsn", required=True, help="PostgreSQL DSN, e.g. postgresql://postgres:pw@127.0.0.1:1001/app")
     p.add_argument("--manifest", required=True, type=Path, help="CSV with email + image_path columns")
     p.add_argument("--dry-run", action="store_true", help="Validate files and rows only; no DB writes")
     args = p.parse_args()

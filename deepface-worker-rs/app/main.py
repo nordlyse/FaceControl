@@ -14,7 +14,7 @@ DETECTOR = "opencv"
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="PrimeApp deepface-worker-rs", version="1.0")
+app = FastAPI(title="deepface-worker-rs", version="1.0")
 
 
 def _json_safe_float(value) -> float | None:

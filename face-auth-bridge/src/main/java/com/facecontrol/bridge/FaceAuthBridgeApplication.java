@@ -1,4 +1,4 @@
-package com.primeapp.bridge;
+package com.facecontrol.bridge;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

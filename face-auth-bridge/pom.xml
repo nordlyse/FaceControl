@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.primeapp</groupId>
+    <groupId>com.facecontrol</groupId>
     <artifactId>face-auth-bridge</artifactId>
     <version>1.0.0</version>
     <name>face-auth-bridge</name>

@@ -1,8 +1,8 @@
-package com.primeapp.bridge.config;
+package com.facecontrol.bridge.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "prime.face")
+@ConfigurationProperties(prefix = "face")
 public class BridgeProperties {
 
     /**

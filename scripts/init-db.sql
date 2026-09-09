@@ -42,6 +42,6 @@ COMMENT ON TABLE deepface.face_enrollment IS 'Enrollment photo (JPEG bytes). Fac
 -- AND a Keycloak user with the same email.
 INSERT INTO "user".users (email, full_name)
 VALUES
-    ('demo@facecontrol.local', 'Demo User'),
-    ('tester@primeapp.com', 'Tester')
+    ('demo@app.local', 'Demo User'),
+    ('tester@app.local', 'Tester')
 ON CONFLICT (email) DO NOTHING;

@@ -1,4 +1,4 @@
-package com.primeapp.bridge.dto;
+package com.facecontrol.bridge.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

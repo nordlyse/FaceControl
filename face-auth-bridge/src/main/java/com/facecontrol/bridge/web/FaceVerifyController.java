@@ -1,11 +1,11 @@
-package com.primeapp.bridge.web;
+package com.facecontrol.bridge.web;
 
-import com.primeapp.bridge.dto.EnrollResponse;
-import com.primeapp.bridge.dto.EnrollmentStatusRequest;
-import com.primeapp.bridge.dto.EnrollmentStatusResponse;
-import com.primeapp.bridge.dto.VerifyRequest;
-import com.primeapp.bridge.dto.VerifyResponse;
-import com.primeapp.bridge.service.FaceVerifyService;
+import com.facecontrol.bridge.dto.EnrollResponse;
+import com.facecontrol.bridge.dto.EnrollmentStatusRequest;
+import com.facecontrol.bridge.dto.EnrollmentStatusResponse;
+import com.facecontrol.bridge.dto.VerifyRequest;
+import com.facecontrol.bridge.dto.VerifyResponse;
+import com.facecontrol.bridge.service.FaceVerifyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

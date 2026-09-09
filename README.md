@@ -1,8 +1,8 @@
 # FaceControl
 
-FaceControl is a **Keycloak face-login stack**: after username and password, the user captures a live camera frame and DeepFace compares it to an enrolled JPEG. The implementation is the same stack used in K-PrimeApp (`prime-face-verify` SPI, `face-auth-bridge`, `deepface-worker-rs`).
+FaceControl is a **Keycloak face-login stack**: after username and password, the user captures a live camera frame and DeepFace compares it to an enrolled JPEG (`face-verify` SPI, `face-auth-bridge`, `deepface-worker-rs`).
 
-Camera capture happens in the Keycloak login page (`prime-face-verify.ftl`). There is no file-upload path.
+Camera capture happens in the Keycloak login page (`face-verify.ftl`). There is no file-upload path.
 
 ## Architecture
 
@@ -10,8 +10,8 @@ Camera capture happens in the Keycloak login page (`prime-face-verify.ftl`). The
 Browser
   │  1. Username / password
   ▼
-Keycloak 23  ── SPI: Prime DeepFace (prime-face-verify)
-  │  2. Camera JPEG (base64 form field prime_face_image)
+Keycloak 23  ── SPI: Face verification (face-verify)
+  │  2. Camera JPEG (base64 form field face_image)
   │  3. POST /internal/api/v1/verify  (header X-Internal-Face-Secret)
   ▼
 face-auth-bridge (Spring Boot, :8071)
@@ -24,7 +24,7 @@ deepface-worker-rs (FastAPI / DeepFace Facenet + opencv, :8054)
 Keycloak  →  context.success()  or  MFA failure
 ```
 
-**Self-enrollment (optional):** if `PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN=true`, the first successful capture is stored via `POST /internal/api/v1/enroll`. Later logins use `/verify`. Self-enroll requires a matching row in `"user".users` (same email as the Keycloak user).
+**Self-enrollment (optional):** if `FACE_SELF_ENROLL_ON_FIRST_LOGIN=true`, the first successful capture is stored via `POST /internal/api/v1/enroll`. Later logins use `/verify`. Self-enroll requires a matching row in `"user".users` (same email as the Keycloak user).
 
 **Silent OIDC:** if the client sends `prompt=none`, the face step is skipped so iframe token refresh is not broken.
 
@@ -32,11 +32,11 @@ Keycloak  →  context.success()  or  MFA failure
 
 | Path | Role |
 |------|------|
-| `keycloak-deepface-provider/` | Keycloak 23 authenticator SPI. Provider id **`prime-face-verify`**. Theme: `src/main/resources/theme-resources/templates/prime-face-verify.ftl`. |
+| `keycloak-deepface-provider/` | Keycloak 23 authenticator SPI. Provider id **`face-verify`**. Theme: `src/main/resources/theme-resources/templates/face-verify.ftl`. |
 | `face-auth-bridge/` | Spring Boot internal REST API (`8071`). Resolves enrollment, calls the worker. |
 | `deepface-worker-rs/` | FastAPI `GET /health`, `POST /verify` (multipart JPEG). |
 | `keycloak/Dockerfile` | Builds the SPI JAR and runs `kc.sh build`. Image tag in Compose: `facecontrol-keycloak:23-deepface`. |
-| `keycloak/prime-realm.json` | Demo realm **`prime`** with extended OAuth code lifespans (`accessCodeLifespan` / `accessCodeLifespanLogin` = **1800** s) so slow MFA does not expire `session_code`. |
+| `keycloak/app-realm.json` | Demo realm **`app`** with extended OAuth code lifespans (`accessCodeLifespan` / `accessCodeLifespanLogin` = **1800** s) so slow MFA does not expire `session_code`. |
 | `keycloak/docker-entrypoint.sh` | `kc.sh start-dev --import-realm`. |
 | `scripts/init-db.sql` | `"user".users` + `deepface.face_enrollment` (runs on an **empty** Postgres volume). |
 | `scripts/bulk-face-image/` | CSV JPEG enrollment + optional Keycloak UUID sync. |
@@ -49,7 +49,7 @@ Requirements: Docker Compose, several GB of disk (TensorFlow + Facenet weights a
 
 ```bash
 cp .env.example .env
-# Change PRIME_FACE_BRIDGE_SECRET and KEYCLOAK_ADMIN_PASSWORD before any production use.
+# Change FACE_BRIDGE_SECRET and KEYCLOAK_ADMIN_PASSWORD before any production use.
 
 docker compose build
 docker compose up -d
@@ -61,15 +61,15 @@ Wait until Keycloak is healthy (`docker compose ps`). The DeepFace worker health
 |-----|---------|
 | http://localhost:8080/auth | Keycloak (HTTP relative path `/auth`) |
 | http://localhost:8080/auth/admin | Admin console — `admin` / `admin` (or `.env`) |
-| http://localhost:8080/auth/realms/prime | Realm `prime` |
-| Postgres `localhost:1001` | Database `primeapp` / user `postgres` |
+| http://localhost:8080/auth/realms/app | Realm `app` |
+| Postgres `localhost:1001` | Database `app` / user `postgres` |
 
-Demo Keycloak users (imported from `prime-realm.json`):
+Demo Keycloak users (imported from `app-realm.json`):
 
 | Username | Email | Password |
 |----------|-------|----------|
-| `demo` | `demo@facecontrol.local` | `Demo@123` |
-| `tester` | `tester@primeapp.com` | `Tester@123` |
+| `demo` | `demo@app.local` | `Demo@123` |
+| `tester` | `tester@app.local` | `Tester@123` |
 
 Matching `"user".users` rows are created by `scripts/init-db.sql` so first-login self-enroll works.
 
@@ -77,10 +77,10 @@ Matching `"user".users` rows are created by `scripts/init-db.sql` so first-login
 
 Realm import does **not** attach the authenticator. Do this once in Admin Console:
 
-1. Open http://localhost:8080/auth/admin → realm **prime**.
+1. Open http://localhost:8080/auth/admin → realm **app**.
 2. **Authentication → Flows**.
-3. **Duplicate** the built-in **Browser** flow (for example `browser with prime face`).
-4. **Add execution** → **Prime DeepFace** (provider id `prime-face-verify`).
+3. **Duplicate** the built-in **Browser** flow (for example `browser with face`).
+4. **Add execution** → **Face verification** (provider id `face-verify`).
 5. Place it **immediately after Username Password Form**.
 6. Set requirement to **Required**.
 7. **Authentication → Bindings**: set **Browser flow** to the duplicated flow and save.
@@ -89,7 +89,7 @@ Do **not** put a Required face step at the same level as Alternative cookie / id
 
 Camera access needs a **secure context**: `https://` or `http://localhost`. `http://127.0.0.1` is usually fine; a LAN IP over plain HTTP will block `getUserMedia`.
 
-Try login: http://localhost:8080/auth/realms/prime/account (or any OIDC client). After password, start the camera, capture, then Continue.
+Try login: http://localhost:8080/auth/realms/app/account (or any OIDC client). After password, start the camera, capture, then Continue.
 
 ## Integrate with an existing Keycloak
 
@@ -129,8 +129,8 @@ face-auth-bridge:
     SPRING_DATASOURCE_URL: jdbc:postgresql://YOUR_POSTGRES:5432/YOUR_DB
     SPRING_DATASOURCE_USERNAME: ...
     SPRING_DATASOURCE_PASSWORD: ...
-    PRIME_FACE_WORKER_URL: http://deepface-worker-rs:8054
-    PRIME_FACE_BRIDGE_SECRET: ${PRIME_FACE_BRIDGE_SECRET}
+    FACE_WORKER_URL: http://deepface-worker-rs:8054
+    FACE_BRIDGE_SECRET: ${FACE_BRIDGE_SECRET}
   depends_on:
     deepface-worker-rs:
       condition: service_healthy
@@ -156,9 +156,9 @@ RUN /opt/keycloak/bin/kc.sh build
 USER 1000
 ```
 
-The FreeMarker template **must** live at `theme-resources/templates/prime-face-verify.ftl` inside the JAR (Keycloak 23 classpath theme resources). A wrong path yields **template not found**.
+The FreeMarker template **must** live at `theme-resources/templates/face-verify.ftl` inside the JAR (Keycloak 23 classpath theme resources). A wrong path yields **template not found**.
 
-SPI registration: `META-INF/services/org.keycloak.authentication.AuthenticatorFactory` → `com.primeapp.keycloak.face.PrimeFaceAuthenticatorFactory`.
+SPI registration: `META-INF/services/org.keycloak.authentication.AuthenticatorFactory` → `com.facecontrol.keycloak.face.FaceAuthenticatorFactory`.
 
 Keycloak **23.x** is the tested version (`keycloak.version` 23.0.7 in the provider POM). Newer Keycloak SPI packages may require code changes.
 
@@ -166,12 +166,12 @@ Keycloak **23.x** is the tested version (`keycloak.version` 23.0.7 in the provid
 
 | Variable | Effect |
 |----------|--------|
-| `PRIME_FACE_BRIDGE_URL` | Bridge base URL, e.g. `http://face-auth-bridge:8071` |
-| `PRIME_FACE_BRIDGE_SECRET` | Must match `PRIME_FACE_BRIDGE_SECRET` on the bridge (`X-Internal-Face-Secret`) |
-| `PRIME_FACE_DISABLED` | `true` → skip the face step entirely |
-| `PRIME_FACE_OPTIONAL_NO_ENROLL` | `true` → HTTP 404 from the bridge counts as login success (no enrollment) |
-| `PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN` | `true` → first capture stored via `/enroll` (Compose default for this repo) |
-| `PRIME_FACE_BRIDGE_TIMEOUT_MS` | HTTP timeout to the bridge (default **45000**) |
+| `FACE_BRIDGE_URL` | Bridge base URL, e.g. `http://face-auth-bridge:8071` |
+| `FACE_BRIDGE_SECRET` | Must match `FACE_BRIDGE_SECRET` on the bridge (`X-Internal-Face-Secret`) |
+| `FACE_DISABLED` | `true` → skip the face step entirely |
+| `FACE_OPTIONAL_NO_ENROLL` | `true` → HTTP 404 from the bridge counts as login success (no enrollment) |
+| `FACE_SELF_ENROLL_ON_FIRST_LOGIN` | `true` → first capture stored via `/enroll` (Compose default for this repo) |
+| `FACE_BRIDGE_TIMEOUT_MS` | HTTP timeout to the bridge (default **45000**) |
 
 Raise body limits so the base64 JPEG POST is not dropped:
 
@@ -180,11 +180,11 @@ QUARKUS_HTTP_LIMITS_MAX_BODY_SIZE: 64M
 JAVA_OPTS_APPEND: "-Dquarkus.http.limits.max-body-size=64M"
 ```
 
-If Traefik sits in front of Keycloak, attach `configs/traefik/dynamic/keycloak-large-post.yml` (`prime-keycloak-large-post` buffering ~64 MiB). Other proxies need an equivalent request-body limit.
+If Traefik sits in front of Keycloak, attach `configs/traefik/dynamic/keycloak-large-post.yml` (`keycloak-large-post` buffering ~64 MiB). Other proxies need an equivalent request-body limit.
 
 ### 5. Realm tokens (long MFA)
 
-DeepFace cold start can exceed the default login `session_code` lifetime. In Admin Console: **Realm settings → Tokens**, set **Login timeout** / access-code lifespans to **1800** seconds (already in `prime-realm.json`). Re-importing JSON often **does not** overwrite an existing realm — change Tokens in the UI if you still see `invalid_code`.
+DeepFace cold start can exceed the default login `session_code` lifetime. In Admin Console: **Realm settings → Tokens**, set **Login timeout** / access-code lifespans to **1800** seconds (already in `app-realm.json`). Re-importing JSON often **does not** overwrite an existing realm — change Tokens in the UI if you still see `invalid_code`.
 
 ### 6. Authentication flow
 
@@ -192,7 +192,7 @@ Same Admin Console steps as [Add the face step to the Browser flow](#add-the-fac
 
 ### 7. Application OIDC client
 
-Create (or reuse) a client, for example `facecontrol`:
+Create (or reuse) a client, for example `app`:
 
 - Protocol: OpenID Connect
 - Access type: public (SPA) or confidential (server)
@@ -204,13 +204,13 @@ Create (or reuse) a client, for example `facecontrol`:
 Issuer for this Compose stack:
 
 ```
-http://localhost:8080/auth/realms/prime
+http://localhost:8080/auth/realms/app
 ```
 
 Well-known config:
 
 ```
-http://localhost:8080/auth/realms/prime/.well-known/openid-configuration
+http://localhost:8080/auth/realms/app/.well-known/openid-configuration
 ```
 
 Point your app’s OIDC library at that issuer. Face verification is **inside Keycloak**; the app only starts the authorization code flow as usual.
@@ -224,23 +224,23 @@ The bridge looks up the reference JPEG by:
 
 ### Option A — First-login camera enroll (development)
 
-Set `PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN=true` on Keycloak. Prerequisite: `"user".users` row with the same email.
+Set `FACE_SELF_ENROLL_ON_FIRST_LOGIN=true` on Keycloak. Prerequisite: `"user".users` row with the same email.
 
 ### Option B — Bulk JPEG
 
 ```bash
 pip install -r scripts/bulk-face-image/requirements-bulk-enroll.txt
 python scripts/bulk-face-image/bulk_face_enroll.py \
-  --dsn postgresql://postgres:PASSWORD@localhost:1001/primeapp \
+  --dsn postgresql://postgres:PASSWORD@localhost:1001/app \
   --manifest scripts/bulk-face-image/bulk-face-enroll-manifest.example.csv \
   --dry-run
 # then rerun without --dry-run
 ```
 
-Optional Keycloak UUID sync (host stdin; realm name `prime` in the SQL):
+Optional Keycloak UUID sync (host stdin; realm name `app` in the SQL):
 
 ```bash
-docker compose exec -T postgres psql -U postgres -d primeapp < scripts/bulk-face-image/sync-face-enrollment-keycloak-ids.sql
+docker compose exec -T postgres psql -U postgres -d app < scripts/bulk-face-image/sync-face-enrollment-keycloak-ids.sql
 ```
 
 ## Bridge API (internal)
@@ -259,18 +259,18 @@ Worker: `GET /health`, `POST /verify` multipart fields `reference` and `probe`.
 
 | Variable | Effect |
 |----------|--------|
-| `PRIME_FACE_WORKER_URL` | `http://deepface-worker-rs:8054` |
-| `PRIME_FACE_BRIDGE_SECRET` | Internal API secret |
-| `PRIME_FACE_REQUIRE_ENROLLMENT` | `false` → missing enrollment treated as verified (use with care) |
+| `FACE_WORKER_URL` | `http://deepface-worker-rs:8054` |
+| `FACE_BRIDGE_SECRET` | Internal API secret |
+| `FACE_REQUIRE_ENROLLMENT` | `false` → missing enrollment treated as verified (use with care) |
 
 ## Troubleshooting
 
 | Symptom | Typical cause |
 |---------|----------------|
 | **413** on login POST | Proxy / Keycloak body limit — Traefik `keycloak-large-post.yml` + Quarkus `max-body-size` |
-| **Template not found** `prime-face-verify.ftl` | Template not under `theme-resources/templates/` in the provider JAR |
+| **Template not found** `face-verify.ftl` | Template not under `theme-resources/templates/` in the provider JAR |
 | **Face enrollment is required** | No `deepface.face_enrollment` row or email mismatch; **404** from bridge |
-| **No PrimeApp user matches this account email** | Missing `"user".users` row for that email (self-enroll) |
+| **No application user matches this account email** | Missing `"user".users` row for that email (self-enroll) |
 | **Face verification service is unavailable** | Bridge down, DB error (**503**), worker not healthy, secret mismatch |
 | **Bridge HTTP 500** `NoClassDefFoundError: Publisher` | Missing `reactive-streams` on the bridge classpath (already in `pom.xml`) |
 | **Worker HTTP 422** missing reference/probe | Multipart encoding; bridge uses `RestTemplate` for FastAPI |
@@ -282,11 +282,11 @@ Worker: `GET /health`, `POST /verify` multipart fields `reference` and `probe`.
 
 ## Security
 
-- Rotate `PRIME_FACE_BRIDGE_SECRET` and Keycloak admin passwords; the Compose defaults are **development only**.
+- Rotate `FACE_BRIDGE_SECRET` and Keycloak admin passwords; the Compose defaults are **development only**.
 - Never expose `face-auth-bridge` `/internal` publicly.
 - Face images are biometric data: restrict database access, backups, and logs.
-- Self-enroll on first login is convenient for demos; production often uses admin/bulk enrollment and `PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN=false`.
+- Self-enroll on first login is convenient for demos; production often uses admin/bulk enrollment and `FACE_SELF_ENROLL_ON_FIRST_LOGIN=false`.
 
 ## License note
 
-Keycloak SPI dependencies are Apache-2.0. DeepFace / TensorFlow have their own licenses. This repository copies the K-PrimeApp face-MFA application code for standalone Keycloak integration.
+Keycloak SPI dependencies are Apache-2.0. DeepFace / TensorFlow have their own licenses.

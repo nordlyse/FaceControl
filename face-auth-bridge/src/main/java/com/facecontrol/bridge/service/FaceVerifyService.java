@@ -1,7 +1,7 @@
-package com.primeapp.bridge.service;
+package com.facecontrol.bridge.service;
 
-import com.primeapp.bridge.config.BridgeProperties;
-import com.primeapp.bridge.dto.VerifyResponse;
+import com.facecontrol.bridge.config.BridgeProperties;
+import com.facecontrol.bridge.dto.VerifyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -65,9 +65,9 @@ public class FaceVerifyService {
         UUID userId;
         try {
             userId =
-                    repo.findPrimeUserIdByEmail(lookup)
+                    repo.findUserIdByEmail(lookup)
                             .orElseThrow(
-                                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no prime app user"));
+                                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no application user"));
             String enrolledBy = (email != null && !email.isBlank()) ? email.strip() : lookup;
             String kc = (keycloakUserId != null && !keycloakUserId.isBlank()) ? keycloakUserId.strip() : null;
             repo.upsertEnrollment(userId, enrolledBy, jpeg, kc);

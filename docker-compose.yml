@@ -6,7 +6,7 @@ services:
     container_name: facecontrol-postgres
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-password}
-      POSTGRES_DB: primeapp
+      POSTGRES_DB: app
       POSTGRES_USER: postgres
     ports:
       - "1001:5432"
@@ -14,7 +14,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d primeapp"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -45,11 +45,11 @@ services:
       context: ./face-auth-bridge
     container_name: facecontrol-face-auth-bridge
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/primeapp
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/app
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-password}
-      PRIME_FACE_WORKER_URL: http://deepface-worker-rs:8054
-      PRIME_FACE_BRIDGE_SECRET: ${PRIME_FACE_BRIDGE_SECRET:-dev-face-secret}
+      FACE_WORKER_URL: http://deepface-worker-rs:8054
+      FACE_BRIDGE_SECRET: ${FACE_BRIDGE_SECRET:-dev-face-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,7 +74,7 @@ services:
         condition: service_started
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/primeapp
+      KC_DB_URL: jdbc:postgresql://postgres:5432/app
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-password}
       KC_DB_SCHEMA: keycloak
@@ -88,20 +88,20 @@ services:
       KC_DB_POOL_MIN_SIZE: 1
       KC_DB_POOL_MAX_SIZE: 10
       QUARKUS_DATASOURCE_JDBC_ENABLE_XA: "false"
-      PRIME_FACE_BRIDGE_URL: http://face-auth-bridge:8071
-      PRIME_FACE_BRIDGE_SECRET: ${PRIME_FACE_BRIDGE_SECRET:-dev-face-secret}
-      PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN: "true"
+      FACE_BRIDGE_URL: http://face-auth-bridge:8071
+      FACE_BRIDGE_SECRET: ${FACE_BRIDGE_SECRET:-dev-face-secret}
+      FACE_SELF_ENROLL_ON_FIRST_LOGIN: "true"
       QUARKUS_HTTP_LIMITS_MAX_BODY_SIZE: 64M
       JAVA_OPTS_APPEND: "-Dquarkus.http.limits.max-body-size=64M"
     volumes:
-      - ./keycloak/prime-realm.json:/opt/keycloak/data/import/prime-realm.json
+      - ./keycloak/app-realm.json:/opt/keycloak/data/import/app-realm.json
       - ./keycloak/docker-entrypoint.sh:/opt/keycloak/docker-entrypoint.sh:ro
     entrypoint: ["/bin/sh", "/opt/keycloak/docker-entrypoint.sh"]
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /auth/realms/prime/.well-known/openid-configuration HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && head -1 <&3 | grep -qE \"HTTP/1\\.[01] 200\"'",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /auth/realms/app/.well-known/openid-configuration HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && head -1 <&3 | grep -qE \"HTTP/1\\.[01] 200\"'",
         ]
       interval: 10s
       timeout: 8s

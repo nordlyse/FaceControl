@@ -1,4 +1,4 @@
-package com.primeapp.bridge.service;
+package com.facecontrol.bridge.service;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,7 +37,7 @@ public class FaceEnrollmentRepository {
         this.jdbc = jdbc;
     }
 
-    public Optional<UUID> findPrimeUserIdByEmail(String emailOrUsernameLookup) {
+    public Optional<UUID> findUserIdByEmail(String emailOrUsernameLookup) {
         if (emailOrUsernameLookup == null || emailOrUsernameLookup.isBlank()) {
             return Optional.empty();
         }

@@ -1,4 +1,4 @@
-package com.primeapp.keycloak.face;
+package com.facecontrol.keycloak.face;
 
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
@@ -24,9 +24,9 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
+public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
 
-    private static final Logger LOG = Logger.getLogger(PrimeFaceAuthenticator.class);
+    private static final Logger LOG = Logger.getLogger(FaceAuthenticator.class);
 
     private static final Pattern BRIDGE_JSON_VERIFIED_TRUE =
             Pattern.compile("\"verified\"\\s*:\\s*true\\b");
@@ -37,29 +37,29 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
     private static final Pattern BRIDGE_JSON_ENROLLED_FALSE =
             Pattern.compile("\"enrolled\"\\s*:\\s*false\\b");
 
-    public static final String FORM_FIELD_FACE = "prime_face_image";
+    public static final String FORM_FIELD_FACE = "face_image";
 
-    private static final String AUTH_NOTE_FACE_MODE = "prime_face_mode";
+    private static final String AUTH_NOTE_FACE_MODE = "face_mode";
 
     private static final HttpClient HTTP =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
     private static boolean bridgeDisabled() {
-        return "true".equalsIgnoreCase(Objects.requireNonNullElse(System.getenv("PRIME_FACE_DISABLED"), ""));
+        return "true".equalsIgnoreCase(Objects.requireNonNullElse(System.getenv("FACE_DISABLED"), ""));
     }
 
     private static boolean allowMissingEnrollment() {
-        return "true".equalsIgnoreCase(System.getenv().getOrDefault("PRIME_FACE_OPTIONAL_NO_ENROLL", ""));
+        return "true".equalsIgnoreCase(System.getenv().getOrDefault("FACE_OPTIONAL_NO_ENROLL", ""));
     }
 
     /** First login: save captured photo as DB reference; later logins verify against it. Default false for backward compatibility. */
     private static boolean selfEnrollOnFirstLogin() {
         return "true".equalsIgnoreCase(
-                System.getenv().getOrDefault("PRIME_FACE_SELF_ENROLL_ON_FIRST_LOGIN", "false"));
+                System.getenv().getOrDefault("FACE_SELF_ENROLL_ON_FIRST_LOGIN", "false"));
     }
 
     private static String bridgeUrl() {
-        String url = Objects.requireNonNullElse(System.getenv("PRIME_FACE_BRIDGE_URL"), "").strip();
+        String url = Objects.requireNonNullElse(System.getenv("FACE_BRIDGE_URL"), "").strip();
         if (url.isEmpty()) {
             return "http://face-auth-bridge:8071";
         }
@@ -67,12 +67,12 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
     }
 
     private static String bridgeSecret() {
-        return Objects.requireNonNullElse(System.getenv("PRIME_FACE_BRIDGE_SECRET"), "").strip();
+        return Objects.requireNonNullElse(System.getenv("FACE_BRIDGE_SECRET"), "").strip();
     }
 
     private static Duration bridgeTimeout() {
         try {
-            return Duration.ofMillis(Long.parseLong(System.getenv().getOrDefault("PRIME_FACE_BRIDGE_TIMEOUT_MS", "45000")));
+            return Duration.ofMillis(Long.parseLong(System.getenv().getOrDefault("FACE_BRIDGE_TIMEOUT_MS", "45000")));
         } catch (NumberFormatException e) {
             return Duration.ofMillis(45000);
         }
@@ -111,7 +111,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
             return;
         }
         if (clientRequestedPromptNone(context)) {
-            LOG.debug("Skipping Prime DeepFace for OIDC prompt=none (silent auth)");
+            LOG.debug("Skipping face verification for OIDC prompt=none (silent auth)");
             context.success();
             return;
         }
@@ -123,8 +123,8 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
         LoginFormsProvider form = context.form().setExecution(context.getExecution().getId());
         String mode = resolveFaceMode(user);
         context.getAuthenticationSession().setAuthNote(AUTH_NOTE_FACE_MODE, mode);
-        form.setAttribute("prime_face_first_enroll", "enroll".equals(mode));
-        context.challenge(form.createForm("prime-face-verify.ftl"));
+        form.setAttribute("face_first_enroll", "enroll".equals(mode));
+        context.challenge(form.createForm("face-verify.ftl"));
     }
 
     private String resolveFaceMode(UserModel user) {
@@ -199,10 +199,10 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
             return;
         }
         if (bridgeSecret().isEmpty()) {
-            LOG.error("PRIME_FACE_BRIDGE_SECRET is unset; rejecting face MFA");
+            LOG.error("FACE_BRIDGE_SECRET is unset; rejecting face MFA");
             context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
             LoginFormsProvider f = faceForm(context).setError("Face bridge secret is not configured on Keycloak.");
-            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("prime-face-verify.ftl"));
+            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             return;
         }
 
@@ -221,7 +221,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
             case NO_ENROLL_DENIED -> {
                 context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
                 LoginFormsProvider f = faceForm(context).setError("Face enrollment is required for this account.");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("prime-face-verify.ftl"));
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             }
             case FORBIDDEN -> {
                 context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
@@ -233,7 +233,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
                 context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
                 LoginFormsProvider f =
                         faceForm(context).setError("Face verification service is unavailable. Try again later.");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("prime-face-verify.ftl"));
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             }
         }
     }
@@ -242,7 +242,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
         String mode = context.getAuthenticationSession().getAuthNote(AUTH_NOTE_FACE_MODE);
         return context.form()
                 .setExecution(context.getExecution().getId())
-                .setAttribute("prime_face_first_enroll", "enroll".equals(mode));
+                .setAttribute("face_first_enroll", "enroll".equals(mode));
     }
 
     private void validateEnroll(AuthenticationFlowContext context, UserModel user, String faceImageBase64) {
@@ -250,20 +250,20 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
                 callBridgeEnroll(user.getEmail(), user.getUsername(), user.getId(), faceImageBase64);
         switch (outcome) {
             case OK -> context.success();
-            case NO_PRIME_USER -> {
+            case NO_APP_USER -> {
                 context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
                 LoginFormsProvider f =
                         faceForm(context)
                                 .setError(
-                                        "No PrimeApp user matches this account email. Create your application user first.");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("prime-face-verify.ftl"));
+                                        "No application user matches this account email. Create the application user first.");
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             }
             case ERROR -> {
                 context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
                 LoginFormsProvider f =
                         faceForm(context)
                                 .setError("Could not save face enrollment. Check face-auth-bridge logs and try again.");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("prime-face-verify.ftl"));
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             }
         }
     }
@@ -278,7 +278,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
 
     private enum EnrollOutcome {
         OK,
-        NO_PRIME_USER,
+        NO_APP_USER,
         ERROR
     }
 
@@ -352,7 +352,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
             HttpResponse<byte[]> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofByteArray());
             int code = resp.statusCode();
             if (code == 404) {
-                return EnrollOutcome.NO_PRIME_USER;
+                return EnrollOutcome.NO_APP_USER;
             }
             if (code >= 200 && code < 300) {
                 return EnrollOutcome.OK;
@@ -367,7 +367,7 @@ public class PrimeFaceAuthenticator extends AbstractUsernameFormAuthenticator {
 
     @Override
     protected Response createLoginForm(LoginFormsProvider form) {
-        return form.createForm("prime-face-verify.ftl");
+        return form.createForm("face-verify.ftl");
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.primeapp.bridge.service;
+package com.facecontrol.bridge.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +37,7 @@ public class DeepFaceWorkerClient {
             ObjectMapper objectMapper,
             Environment env,
             @Qualifier("deepFaceWorkerRestTemplate") RestTemplate workerRestTemplate) {
-        String base = env.getProperty("prime.face.worker-base-url", "http://localhost:8054").strip();
+        String base = env.getProperty("face.worker-base-url", "http://localhost:8054").strip();
         this.workerBaseUrl = base.replaceAll("/$", "");
         this.objectMapper = objectMapper;
         this.workerRestTemplate = workerRestTemplate;
@@ -99,7 +99,7 @@ public class DeepFaceWorkerClient {
 
     /**
      * DeepFace occasionally emits non-finite metrics; passing those through to HTTP JSON breaks Jackson serialization
-     * of {@link com.primeapp.bridge.dto.VerifyResponse} and surfaces as opaque HTTP 500 from the bridge.
+     * of {@link com.facecontrol.bridge.dto.VerifyResponse} and surfaces as opaque HTTP 500 from the bridge.
      */
     private static double jsonFiniteDouble(JsonNode root, String field) {
         JsonNode n = root.path(field);

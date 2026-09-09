@@ -1,4 +1,4 @@
-# Build Keycloak with Prime DeepFace authenticator JAR (Keycloak 23 Quarkus).
+# Build Keycloak with the face authenticator JAR (Keycloak 23 Quarkus).
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /w
 COPY keycloak-deepface-provider/pom.xml keycloak-deepface-provider/

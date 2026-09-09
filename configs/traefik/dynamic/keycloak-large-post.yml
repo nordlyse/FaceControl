@@ -2,7 +2,7 @@
 # forwarding buffer rejects large bodies with 413 unless explicitly raised.
 http:
   middlewares:
-    prime-keycloak-large-post:
+    keycloak-large-post:
       buffering:
         maxRequestBodyBytes: 67108864
         memRequestBodyBytes: 67108864

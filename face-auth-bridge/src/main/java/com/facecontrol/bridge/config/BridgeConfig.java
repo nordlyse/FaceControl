@@ -1,4 +1,4 @@
-package com.primeapp.bridge.config;
+package com.facecontrol.bridge.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

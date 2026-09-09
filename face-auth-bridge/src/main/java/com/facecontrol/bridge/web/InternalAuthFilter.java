@@ -1,6 +1,6 @@
-package com.primeapp.bridge.web;
+package com.facecontrol.bridge.web;
 
-import com.primeapp.bridge.config.BridgeProperties;
+import com.facecontrol.bridge.config.BridgeProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

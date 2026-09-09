@@ -1,4 +1,4 @@
-package com.primeapp.keycloak.face;
+package com.facecontrol.keycloak.face;
 
 import org.keycloak.Config;
 import org.keycloak.authentication.Authenticator;
@@ -10,11 +10,11 @@ import org.keycloak.provider.ProviderConfigProperty;
 
 import java.util.List;
 
-public class PrimeFaceAuthenticatorFactory implements AuthenticatorFactory {
+public class FaceAuthenticatorFactory implements AuthenticatorFactory {
 
-    public static final String PROVIDER_ID = "prime-face-verify";
+    public static final String PROVIDER_ID = "face-verify";
 
-    private static final PrimeFaceAuthenticator SINGLETON = new PrimeFaceAuthenticator();
+    private static final FaceAuthenticator SINGLETON = new FaceAuthenticator();
 
     private static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES =
             new AuthenticationExecutionModel.Requirement[] {
@@ -34,12 +34,12 @@ public class PrimeFaceAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
     public String getDisplayType() {
-        return "Prime DeepFace";
+        return "Face verification";
     }
 
     @Override
     public String getHelpText() {
-        return "After password, verify face against PrimeApp enrollment (face-auth-bridge + DeepFace).";
+        return "After password, verify face against enrolled photo (face-auth-bridge + DeepFace).";
     }
 
     @Override
