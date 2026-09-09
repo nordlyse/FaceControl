@@ -4,6 +4,8 @@ FaceControl is a **Keycloak face-login stack**: after username and password, the
 
 Camera capture happens in the Keycloak login page (`face-verify.ftl`). There is no file-upload path.
 
+Face matching uses third-party software (DeepFace, Facenet, TensorFlow, Keycloak, and others). Names, versions, and licenses are listed under **[Third-party software and licenses](#third-party-software-and-licenses)**.
+
 ## Architecture
 
 Every runtime piece in this repo is on the login path. There is no unused application container.
@@ -340,6 +342,53 @@ Worker: `GET /health`, `POST /verify` multipart fields `reference` and `probe`.
 - Face images are biometric data: restrict database access, backups, and logs.
 - Self-enroll on first login is convenient for demos; production often uses admin/bulk enrollment and `FACE_SELF_ENROLL_ON_FIRST_LOGIN=false`.
 
-## License note
+## Third-party software and licenses
 
-Keycloak SPI dependencies are Apache-2.0. DeepFace / TensorFlow have their own licenses.
+FaceControl is an integration. Face comparison, identity, and several libraries come from other projects. **You must follow each project’s license** if you run, distribute, or modify this stack. This table is a convenience summary of the **direct** dependencies in this repo; Maven/pip also pull transitive packages with their own terms.
+
+This repository does not grant those third-party rights. License texts are on the upstream projects.
+
+### Runtime stack
+
+| Software | Where used | Version in this repo | License | Link |
+|----------|------------|----------------------|---------|------|
+| [Keycloak](https://www.keycloak.org/) | Login, OIDC, hosts the `face-verify` SPI | 23.0 (`quay.io/keycloak/keycloak:23.0`, SPI compiled against **23.0.7**) | Apache License 2.0 | [LICENSE](https://github.com/keycloak/keycloak/blob/23.0.0/LICENSE.txt) |
+| [Spring Boot](https://spring.io/projects/spring-boot) | `face-auth-bridge` | 3.4.4 | Apache License 2.0 | [LICENSE](https://github.com/spring-projects/spring-boot/blob/v3.4.4/LICENSE.txt) |
+| [PostgreSQL](https://www.postgresql.org/) | Users, face enrollment, Keycloak DB | 17 (`postgres:17`) | PostgreSQL License | [license](https://www.postgresql.org/about/licence/) |
+| [PostgreSQL JDBC](https://jdbc.postgresql.org/) | Bridge JDBC driver | from Spring Boot BOM | BSD-2-Clause | [LICENSE](https://jdbc.postgresql.org/about/license/) |
+| [Reactive Streams](https://www.reactive-streams.org/) | Bridge multipart / `Publisher` | from Spring BOM | MIT-0 | [LICENSE](https://github.com/reactive-streams/reactive-streams-jvm/blob/master/README.md#license) |
+| [JBoss Logging](https://github.com/jboss-logging/jboss-logging) | Keycloak SPI logging (`provided`) | 3.6.3.Final | Apache License 2.0 | [LICENSE](https://github.com/jboss-logging/jboss-logging/blob/main/LICENSE.txt) |
+| [Jakarta RESTful Web Services](https://jakarta.ee/specifications/restful-ws/) | Keycloak SPI JAX-RS (`provided`) | 3.1.0 | EPL-2.0 | [spec license](https://www.eclipse.org/legal/epl-2.0/) |
+
+### Face matching (Python worker)
+
+These are declared in `deepface-worker-rs/requirements.txt`. This stack calls **Facenet** with the **opencv** detector only (see `deepface-worker-rs/app/main.py`). DeepFace can wrap other models (for example VGG-Face) that have **stricter** licenses; those models are not selected here.
+
+| Software | Role | Version in this repo | License | Link |
+|----------|------|----------------------|---------|------|
+| [DeepFace](https://github.com/serengil/deepface) | Python wrapper around face models (`DeepFace.verify`) | 0.0.94 | MIT (wrapper). **Each wrapped model keeps its own license.** | [LICENSE](https://github.com/serengil/deepface/blob/master/LICENSE) |
+| [Facenet](https://github.com/davidsandberg/facenet) | Recognition model used by this worker | weights `facenet_weights.h5` (downloaded at image build) | MIT | [LICENSE](https://github.com/davidsandberg/facenet/blob/master/LICENSE.md) |
+| [OpenCV](https://opencv.org/) (`opencv-python-headless`) | Face detector backend `opencv` | 4.11.0.86 | Apache License 2.0 (OpenCV 4.5+) | [LICENSE](https://github.com/opencv/opencv/blob/4.11.0/LICENSE) |
+| [TensorFlow](https://www.tensorflow.org/) | Runs Facenet | 2.19.0 | Apache License 2.0 | [LICENSE](https://github.com/tensorflow/tensorflow/blob/v2.19.0/LICENSE) |
+| [tf-keras](https://github.com/keras-team/tf-keras) | Keras 2 API on TensorFlow 2.19 | ≥ 2.19.0 | Apache License 2.0 | [LICENSE](https://github.com/keras-team/tf-keras/blob/master/LICENSE) |
+| [FastAPI](https://fastapi.tiangolo.com/) | Worker HTTP API | 0.115.12 | MIT | [LICENSE](https://github.com/fastapi/fastapi/blob/0.115.12/LICENSE) |
+| [Uvicorn](https://www.uvicorn.org/) | ASGI server | 0.34.0 | BSD-3-Clause | [LICENSE](https://github.com/encode/uvicorn/blob/0.34.0/LICENSE.md) |
+| [python-multipart](https://github.com/Kludex/python-multipart) | Multipart `reference` / `probe` uploads | 0.0.20 | Apache License 2.0 | [LICENSE](https://github.com/Kludex/python-multipart/blob/0.0.20/LICENSE.txt) |
+| [Pillow](https://python-pillow.org/) | Image I/O | 11.2.1 | HPND (historical PIL license) | [LICENSE](https://github.com/python-pillow/Pillow/blob/11.2.1/LICENSE) |
+| [NumPy](https://numpy.org/) | Numeric arrays | 2.1.3 | BSD-3-Clause | [LICENSE](https://github.com/numpy/numpy/blob/v2.1.3/LICENSE.txt) |
+
+Facenet weights are fetched at Docker build from [serengil/deepface_models](https://github.com/serengil/deepface_models) (`facenet_weights.h5`). Treat that artifact under the Facenet / DeepFace model terms above.
+
+### Optional operator tools
+
+| Software | Where used | License | Link |
+|----------|------------|---------|------|
+| [psycopg](https://www.psycopg.org/) 3 | `scripts/bulk-face-image/bulk_face_enroll.py` | LGPL-3.0-or-later | [license](https://www.psycopg.org/psycopg3/docs/license.html) |
+| [Traefik](https://traefik.io/) | Only if you apply `configs/traefik/dynamic/keycloak-large-post.yml` (not started by default Compose) | MIT | [LICENSE](https://github.com/traefik/traefik/blob/master/LICENSE.md) |
+
+### Notes
+
+- **Apache-2.0** and **MIT** components used here (Keycloak, Spring Boot, TensorFlow, DeepFace wrapper, Facenet, OpenCV 4.x) generally allow commercial use if you keep notices and follow the license text.
+- Do **not** switch DeepFace to **VGG-Face** (or other restricted models) without checking that model’s license; VGG-Face is commonly treated as **not** free for commercial use.
+- Docker base images (`python:3.11-slim-bookworm`, `eclipse-temurin`, `maven`, `postgres`) have their own image and OS package licenses.
+- For a complete transitive inventory, run `mvn license:aggregate-third-party-report` on the Java modules and `pip-licenses` in the worker image.
