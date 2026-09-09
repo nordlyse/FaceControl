@@ -1,5 +1,3 @@
-"""Minimal DeepFace verify API — Java face-auth-bridge sends reference + probe JPEG bytes."""
-
 import logging
 import math
 import tempfile
@@ -18,7 +16,6 @@ app = FastAPI(title="deepface-worker-rs", version="1.0")
 
 
 def _json_safe_float(value) -> float | None:
-    """RFC-compliant JSON cannot represent NaN/Inf; omit them so Java Jackson can parse and serialize."""
     try:
         x = float(value)
     except (TypeError, ValueError):
@@ -50,7 +47,6 @@ async def verify(
     reference: UploadFile = File(..., description="Enrolled JPEG from DB"),
     probe: UploadFile = File(..., description="JPEG from live capture"),
 ):
-    """Returns DeepFace.verify result."""
     ref_path = probe_path = None
     try:
         ref_data = await reference.read()

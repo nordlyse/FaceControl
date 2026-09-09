@@ -43,7 +43,6 @@
       if (hiddenImg) hiddenImg.value = b64 || '';
     }
 
-    /** Resize + JPEG; keeps POST small enough for proxies even without buffering tweaks */
     function compressSourceToJpegBase64(src, onDone) {
       var maxW = 480;
       var quality = 0.72;

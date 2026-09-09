@@ -52,7 +52,6 @@ public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
         return "true".equalsIgnoreCase(System.getenv().getOrDefault("FACE_OPTIONAL_NO_ENROLL", ""));
     }
 
-    /** First login: save captured photo as DB reference; later logins verify against it. Default false for backward compatibility. */
     private static boolean selfEnrollOnFirstLogin() {
         return "true".equalsIgnoreCase(
                 System.getenv().getOrDefault("FACE_SELF_ENROLL_ON_FIRST_LOGIN", "false"));
@@ -78,7 +77,7 @@ public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
         }
     }
 
-    static String escapeJsonNullable(String text) {
+    private static String escapeJsonNullable(String text) {
         if (text == null || text.isBlank()) {
             return "null";
         }
@@ -86,10 +85,6 @@ public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
         return "\"" + e + "\"";
     }
 
-    /**
-     * OIDC silent checks ({@code prompt=none}) must not render interactive HTML; skipping this step avoids protocol errors
-     * and matches behaviour expected for iframe/token renewal requests. Full interactive login still runs face verification.
-     */
     private static boolean clientRequestedPromptNone(AuthenticationFlowContext context) {
         String prompt =
                 context.getAuthenticationSession().getClientNote(OIDCLoginProtocol.PROMPT_PARAM);
@@ -255,7 +250,7 @@ public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
                 LoginFormsProvider f =
                         faceForm(context)
                                 .setError(
-                                        "No application user matches this account email. Create the application user first.");
+                                        "No application user matches this account email. Add the application user first.");
                 context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, f.createForm("face-verify.ftl"));
             }
             case ERROR -> {
@@ -382,6 +377,5 @@ public class FaceAuthenticator extends AbstractUsernameFormAuthenticator {
 
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
-        // no-op
     }
 }

@@ -46,7 +46,7 @@ public class FaceVerifyController {
 
     @PostMapping(value = "/enroll", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public EnrollResponse enroll(@RequestBody VerifyRequest request) {
-        faceVerifyService.enrollReference(
+        faceVerifyService.insertEnrollment(
                 request.email(), request.username(), request.keycloakUserId(), request.faceImageBase64());
         return new EnrollResponse(true);
     }

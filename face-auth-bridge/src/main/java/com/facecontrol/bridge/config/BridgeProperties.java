@@ -5,14 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "face")
 public class BridgeProperties {
 
-    /**
-     * Shared secret for Keycloak provider and other internal callers.
-     */
     private String internalSecret = "change-me-face-bridge";
-
-    /**
-     * If true, users without a row in deepface.face_enrollment get HTTP 404 on verify.
-     */
     private boolean requireEnrollment = true;
 
     public String getInternalSecret() {

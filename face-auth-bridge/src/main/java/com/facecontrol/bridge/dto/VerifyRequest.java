@@ -7,6 +7,5 @@ public record VerifyRequest(
         String email,
         String username,
         String faceImageBase64,
-        /** Keycloak user UUID; matches deepface.face_enrollment.keycloak_user_id when email lookup fails */
         String keycloakUserId
 ) {}

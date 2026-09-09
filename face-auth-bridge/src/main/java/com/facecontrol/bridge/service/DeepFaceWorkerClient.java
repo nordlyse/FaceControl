@@ -26,7 +26,6 @@ public class DeepFaceWorkerClient {
 
     private static final Logger log = LoggerFactory.getLogger(DeepFaceWorkerClient.class);
 
-    /** Facenet alignment with FastAPI DeepFace.verify default in python app. */
     static final String MODEL_HINT = "Facenet";
 
     private final RestTemplate workerRestTemplate;
@@ -43,11 +42,7 @@ public class DeepFaceWorkerClient {
         this.workerRestTemplate = workerRestTemplate;
     }
 
-    /**
-     * FastAPI expects multipart fields {@code reference} and {@code probe}. Spring {@code RestClient} multipart with the JDK
-     * HTTP stack produced bodies Starlette parsed as empty → HTTP 422; {@link RestTemplate} multipart works reliably.
-     */
-    public VerificationResult verify(byte[] referenceJpeg, byte[] probeJpeg) throws Exception {
+    private VerificationResult verify(byte[] referenceJpeg, byte[] probeJpeg) throws Exception {
         MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
         parts.add(
                 "reference",
@@ -97,10 +92,6 @@ public class DeepFaceWorkerClient {
         return new VerificationResult(verified, distance, thresh);
     }
 
-    /**
-     * DeepFace occasionally emits non-finite metrics; passing those through to HTTP JSON breaks Jackson serialization
-     * of {@link com.facecontrol.bridge.dto.VerifyResponse} and surfaces as opaque HTTP 500 from the bridge.
-     */
     private static double jsonFiniteDouble(JsonNode root, String field) {
         JsonNode n = root.path(field);
         if (!n.isNumber()) {

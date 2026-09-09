@@ -126,7 +126,7 @@ Demo Keycloak users (imported from `app-realm.json`):
 | `demo` | `demo@app.local` | `Demo@123` |
 | `tester` | `tester@app.local` | `Tester@123` |
 
-Matching `"user".users` rows are created by `scripts/init-db.sql` so first-login self-enroll works.
+Matching `"user".users` rows are inserted by `scripts/init-db.sql` so first-login self-enroll works.
 
 ### Add the face step to the Browser flow
 
@@ -247,7 +247,7 @@ Same Admin Console steps as [Add the face step to the Browser flow](#add-the-fac
 
 ### 7. Application OIDC client
 
-Create (or reuse) a client, for example `app`:
+Add (or reuse) a client, for example `app`:
 
 - Protocol: OpenID Connect
 - Access type: public (SPA) or confidential (server)
@@ -325,7 +325,7 @@ Worker: `GET /health`, `POST /verify` multipart fields `reference` and `probe`.
 | **413** on login POST | Proxy / Keycloak body limit — Traefik `keycloak-large-post.yml` + Quarkus `max-body-size` |
 | **Template not found** `face-verify.ftl` | Template not under `theme-resources/templates/` in the provider JAR |
 | **Face enrollment is required** | No `deepface.face_enrollment` row or email mismatch; **404** from bridge |
-| **No application user matches this account email** | Missing `"user".users` row for that email (self-enroll) |
+| **No application user matches this account email** | Missing `"user".users` row for that email (self-enroll). Add the user, then retry. |
 | **Face verification service is unavailable** | Bridge down, DB error (**503**), worker not healthy, secret mismatch |
 | **Bridge HTTP 500** `NoClassDefFoundError: Publisher` | Missing `reactive-streams` on the bridge classpath (already in `pom.xml`) |
 | **Worker HTTP 422** missing reference/probe | Multipart encoding; bridge uses `RestTemplate` for FastAPI |

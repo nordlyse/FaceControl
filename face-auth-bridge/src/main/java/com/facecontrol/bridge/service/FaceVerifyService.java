@@ -28,9 +28,6 @@ public class FaceVerifyService {
         this.props = props;
     }
 
-    /**
-     * Whether an active enrollment row exists for this identity (same resolution rules as verify).
-     */
     public boolean hasEnrollment(String email, String username, String keycloakUserId) {
         validateIdentityPresent(email, username, keycloakUserId);
         try {
@@ -43,11 +40,7 @@ public class FaceVerifyService {
         }
     }
 
-    /**
-     * Store or replace reference JPEG from first-login capture. Requires a matching {@code "user".users} row
-     * (same email/username lookup as verify).
-     */
-    public void enrollReference(String email, String username, String keycloakUserId, String faceImageBase64) {
+    public void insertEnrollment(String email, String username, String keycloakUserId, String faceImageBase64) {
         validateIdentityPresent(email, username, keycloakUserId);
         if (faceImageBase64 == null || faceImageBase64.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "faceImageBase64 required");
@@ -91,7 +84,6 @@ public class FaceVerifyService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "enrollment database error");
         }
         String lookup = email != null && !email.isBlank() ? email : username;
-        boolean hasKeycloakId = keycloakUserId != null && !keycloakUserId.isBlank();
         if (refOpt.isEmpty()) {
             if (!props.isRequireEnrollment()) {
                 log.debug(

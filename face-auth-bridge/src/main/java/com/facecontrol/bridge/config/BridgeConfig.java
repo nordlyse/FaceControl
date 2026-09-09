@@ -12,7 +12,6 @@ import java.time.Duration;
 @EnableConfigurationProperties(BridgeProperties.class)
 public class BridgeConfig {
 
-    /** Used only for multipart POST to deepface-worker-rs; timeouts tolerate cold models / slow CPU inference. */
     @Bean(name = "deepFaceWorkerRestTemplate")
     RestTemplate deepFaceWorkerRestTemplate() {
         SimpleClientHttpRequestFactory rf = new SimpleClientHttpRequestFactory();
