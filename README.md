@@ -6,22 +6,75 @@ Camera capture happens in the Keycloak login page (`face-verify.ftl`). There is 
 
 ## Architecture
 
+Every runtime piece in this repo is on the login path. There is no unused application container.
+
+| Piece | Language | How it runs | Used? |
+|-------|----------|-------------|-------|
+| `keycloak` | Keycloak 23 (Quarkus) | Compose service `:8080` | Yes — username/password + face form |
+| `keycloak-deepface-provider` | Java SPI | Built **into** the Keycloak image (`kc.sh build`), not a separate process | Yes — authenticator `face-verify` + `face-verify.ftl` |
+| `face-auth-bridge` | Java (Spring Boot) | Compose service `:8071` | Yes — enrollment DB + worker client |
+| `deepface-worker-rs` | Python (FastAPI / DeepFace) | Compose service `:8054` | Yes — Facenet compare of two JPEGs |
+| `postgres` | PostgreSQL 17 | Compose service `:1001` | Yes — Keycloak schema + `"user".users` + `deepface.face_enrollment` |
+| `scripts/init-db.sql` | SQL | Mounted into Postgres on first empty volume | Yes |
+| `scripts/bulk-face-image/` | Python / SQL | Run by an operator when needed | Optional — bulk JPEG enroll |
+| `configs/traefik/dynamic/keycloak-large-post.yml` | Traefik | **Not** started by `docker-compose.yml` | Optional — only if Traefik sits in front of Keycloak |
+
+```mermaid
+flowchart TB
+  subgraph clients [Clients]
+    Browser["Browser / OIDC app"]
+  end
+
+  subgraph compose [docker-compose.yml — all four services are used]
+    KC["Keycloak 23<br/>includes keycloak-deepface-provider JAR<br/>:8080 /auth"]
+    Bridge["face-auth-bridge<br/>Java Spring Boot<br/>:8071"]
+    Worker["deepface-worker-rs<br/>Python FastAPI + DeepFace<br/>:8054"]
+    PG[("PostgreSQL<br/>database app")]
+  end
+
+  Browser -->|"1. username / password"| KC
+  KC -->|"2. camera JPEG face_image"| KC
+  KC -->|"3. POST /internal/api/v1/verify<br/>X-Internal-Face-Secret"| Bridge
+  Bridge -->|"4. reference JPEG"| PG
+  Bridge -->|"5. multipart reference + probe"| Worker
+  Worker -->|"6. verified / distance / threshold"| Bridge
+  Bridge -->|"7. HTTP 200 / 403 / 404"| KC
+  KC -->|"8. login success or MFA failure"| Browser
+  KC -.->|"stores users, sessions, realm app"| PG
 ```
-Browser
-  │  1. Username / password
-  ▼
-Keycloak 23  ── SPI: Face verification (face-verify)
-  │  2. Camera JPEG (base64 form field face_image)
-  │  3. POST /internal/api/v1/verify  (header X-Internal-Face-Secret)
-  ▼
-face-auth-bridge (Spring Boot, :8071)
-  │  4. Load reference JPEG from PostgreSQL  deepface.face_enrollment
-  │  5. POST multipart /verify  (reference + probe)
-  ▼
-deepface-worker-rs (FastAPI / DeepFace Facenet + opencv, :8054)
-  │  6. { verified, distance, threshold }
-  ▼
-Keycloak  →  context.success()  or  MFA failure
+
+Login sequence:
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant Browser
+  participant Keycloak as Keycloak + face-verify SPI
+  participant Bridge as face-auth-bridge
+  participant DB as PostgreSQL
+  participant Worker as deepface-worker-rs
+
+  User->>Browser: Open app login
+  Browser->>Keycloak: OIDC authorize
+  User->>Keycloak: Username + password
+  Keycloak->>Browser: Face verification page
+  User->>Browser: Start camera, capture
+  Browser->>Keycloak: POST face_image (JPEG base64)
+
+  alt First login and FACE_SELF_ENROLL_ON_FIRST_LOGIN=true
+    Keycloak->>Bridge: POST /internal/api/v1/enrollment-status
+    Bridge->>DB: Lookup enrollment
+    Keycloak->>Bridge: POST /internal/api/v1/enroll
+    Bridge->>DB: Store reference JPEG
+    Keycloak->>Browser: Login success
+  else Later login / verify
+    Keycloak->>Bridge: POST /internal/api/v1/verify
+    Bridge->>DB: Load reference JPEG
+    Bridge->>Worker: POST /verify multipart
+    Worker-->>Bridge: verified true or false
+    Bridge-->>Keycloak: 200 / 403 / 404
+    Keycloak->>Browser: Login success or retry
+  end
 ```
 
 **Self-enrollment (optional):** if `FACE_SELF_ENROLL_ON_FIRST_LOGIN=true`, the first successful capture is stored via `POST /internal/api/v1/enroll`. Later logins use `/verify`. Self-enroll requires a matching row in `"user".users` (same email as the Keycloak user).
